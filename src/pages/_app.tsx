@@ -7,15 +7,28 @@ if (typeof window !== 'undefined') {
   window.process = {
     ...window.process,
     // Provide all potentially required Node.js properties
-    node: false,
-    version: '',
-    versions: {},
+    versions: {
+      node: '0.0.0',
+      http_parser: '0.0.0',
+      v8: '0.0.0',
+      ares: '0.0.0',
+      uv: '0.0.0',
+      zlib: '0.0.0',
+      modules: '0.0.0',
+      openssl: '0.0.0'
+    },
     env: { 
-      BROWSER: true,
+      BROWSER: 'true',
       NODE_ENV: process.env.NODE_ENV 
     },
-    platform: 'browser',
-    release: undefined,
+    platform: 'browser' as NodeJS.Platform,
+    release: {
+      name: 'node',
+      sourceUrl: '',
+      headersUrl: '',
+      libUrl: '',
+      lts: 'false',
+    },
   }
 }
 
