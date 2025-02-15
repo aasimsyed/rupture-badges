@@ -40,21 +40,31 @@ export default function ImageGallery() {
           title: img.public_id.split('/').pop() || '',
           width: img.width,
           height: img.height,
+          metadata: img.metadata
         }));
         
-        // Filter out duplicates based on id
-        const existingIds = new Set(prev.map(img => img.id));
-        const uniqueNewImages = newImages.filter(img => !existingIds.has(img.id));
+        // Combine existing and new images
+        const allImages = [...prev, ...newImages];
         
-        return [...prev, ...uniqueNewImages];
+        // Remove duplicates and sort by catalog number
+        const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
+        return uniqueImages.sort((a, b) => {
+          // Extract numbers from catalog numbers, defaulting to high number if invalid
+          const aMatch = a.metadata?.catalogNumber?.match(/B(\d+)/);
+          const bMatch = b.metadata?.catalogNumber?.match(/B(\d+)/);
+          
+          const aNum = aMatch ? parseInt(aMatch[1], 10) : 9999;
+          const bNum = bMatch ? parseInt(bMatch[1], 10) : 9999;
+          
+          return aNum - bNum;
+        });
       });
       
       setNextCursor(result.nextCursor);
       setHasMore(!!result.nextCursor);
     } catch (error) {
-      console.error('Failed to load images:', error);
-      setError('Failed to load images. Please try again.');
-      setHasMore(false);
+      setError('Failed to load images');
+      console.error('Error loading images:', error);
     } finally {
       setLoading(false);
     }

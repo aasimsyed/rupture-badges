@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryImage } from '@/types';  // Import from types instead
 
 // Only configure cloudinary on the server side
 if (typeof window === 'undefined') {
@@ -8,14 +9,6 @@ if (typeof window === 'undefined') {
     api_secret: process.env.CLOUDINARY_API_SECRET,
     secure: true,
   });
-}
-
-export interface CloudinaryImage {
-  public_id: string;
-  secure_url: string;
-  width: number;
-  height: number;
-  format: string;
 }
 
 export async function getImages(nextCursor?: string): Promise<{
