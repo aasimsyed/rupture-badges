@@ -1,6 +1,10 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Remove edge runtime and keep dynamic
+export const dynamic = 'force-dynamic';
+
+// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -9,11 +13,18 @@ cloudinary.config({
 });
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const cursor = searchParams.get('cursor');
-  
   try {
-    console.log('Fetching images from folder:', process.env.CLOUDINARY_FOLDER);
+    if (!process.env.CLOUDINARY_FOLDER) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const cursor = searchParams.get('cursor');
+
+    // Remove cursor validation since Cloudinary handles it
     const results = await cloudinary.search
       .expression(`resource_type:image AND folder=${process.env.CLOUDINARY_FOLDER}`)
       .with_field('tags')
@@ -23,8 +34,6 @@ export async function GET(request: NextRequest) {
       .next_cursor(cursor || undefined)
       .execute();
 
-    console.log('Found images:', results.resources.length);
-    
     return NextResponse.json({
       images: results.resources,
       nextCursor: results.next_cursor,
@@ -32,7 +41,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error in /api/images:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch images', details: error },
+      { error: 'Failed to fetch images' },
       { status: 500 }
     );
   }

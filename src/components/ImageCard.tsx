@@ -25,7 +25,7 @@ export default function ImageCard({ image, onClick }: ImageCardProps) {
             object-cover transition-opacity duration-300
             ${isLoading ? 'opacity-0' : 'opacity-100'}
           `}
-          onLoadingComplete={() => setIsLoading(false)}
+          onLoad={() => setIsLoading(false)}
         />
         {isLoading && (
           <div className="absolute inset-0 bg-gray-900 animate-pulse" />

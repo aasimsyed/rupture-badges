@@ -2,12 +2,14 @@ const webpack = require('webpack');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   images: {
     domains: ['res.cloudinary.com'],
     unoptimized: false,
   },
   reactStrictMode: true,
+  experimental: {
+    serverActions: true,
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Provide polyfills and fallbacks for client-side

@@ -28,12 +28,22 @@ export async function getImages(nextCursor?: string): Promise<{
       params.append('cursor', nextCursor);
     }
     
-    // Always use the API route instead of direct Cloudinary SDK calls on the client
-    const response = await fetch(`/api/images?${params}`);
-    const data = await response.json();
+    // Add timestamp to prevent caching
+    const timestamp = Date.now();
+    params.append('_t', timestamp.toString());
+    
+    const response = await fetch(`/api/images?${params.toString()}`);
     
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to fetch images');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('API Error:', response.status, errorData);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.images) {
+      throw new Error('Invalid response format');
     }
     
     return {
@@ -42,7 +52,7 @@ export async function getImages(nextCursor?: string): Promise<{
     };
   } catch (error) {
     console.error('Error fetching images:', error);
-    return { images: [] };
+    throw error;
   }
 }
 

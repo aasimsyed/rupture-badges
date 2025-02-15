@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 
 interface IntersectionObserverOptions {
-  threshold?: number;
+  root?: Element | null;
   rootMargin?: string;
+  threshold?: number | number[];
 }
 
 export default function useIntersectionObserver(
   elementRef: React.RefObject<Element>,
-  options: IntersectionObserverOptions = {}
 ): boolean {
   const [isIntersecting, setIsIntersecting] = useState(false);
 
@@ -15,16 +15,27 @@ export default function useIntersectionObserver(
     const element = elementRef.current;
     if (!element) return;
 
-    const observer = new IntersectionObserver(([entry]) => {
-      setIsIntersecting(entry.isIntersecting);
-    }, options);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        setIsIntersecting(entry.isIntersecting);
+      },
+      {
+        root: null, // Use viewport as root
+        rootMargin: '100px', // Start loading 100px before element is visible
+        threshold: 0, // Trigger as soon as even 1px is visible
+      }
+    );
 
     observer.observe(element);
 
     return () => {
-      observer.unobserve(element);
+      if (element) {
+        observer.unobserve(element);
+      }
+      observer.disconnect();
     };
-  }, [elementRef, options]);
+  }, [elementRef]);
 
   return isIntersecting;
 } 

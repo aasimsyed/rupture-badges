@@ -13,42 +13,61 @@ export default function ImageGallery() {
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
   
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const isIntersecting = useIntersectionObserver(loadMoreRef, {
-    threshold: 0.5,
-    rootMargin: '100px',
-  });
+  const isIntersecting = useIntersectionObserver(loadMoreRef);
 
   const loadImages = async () => {
     if (loading || !hasMore) return;
     
     setLoading(true);
+    setError(null);
+    
     try {
       const result = await getImages(nextCursor);
       
-      setImages(prev => [
-        ...prev,
-        ...result.images.map(img => ({
+      if (result.images.length === 0 && images.length === 0) {
+        setError('No images found');
+        setHasMore(false);
+        return;
+      }
+      
+      setImages(prev => {
+        const newImages = result.images.map(img => ({
           id: img.public_id,
           url: img.secure_url,
           title: img.public_id.split('/').pop() || '',
           width: img.width,
           height: img.height,
-        })),
-      ]);
+        }));
+        
+        // Filter out duplicates based on id
+        const existingIds = new Set(prev.map(img => img.id));
+        const uniqueNewImages = newImages.filter(img => !existingIds.has(img.id));
+        
+        return [...prev, ...uniqueNewImages];
+      });
       
       setNextCursor(result.nextCursor);
       setHasMore(!!result.nextCursor);
     } catch (error) {
       console.error('Failed to load images:', error);
+      setError('Failed to load images. Please try again.');
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial load
   useEffect(() => {
-    if (isIntersecting) {
+    loadImages();
+  }, []);
+
+  // Load more when scrolling
+  useEffect(() => {
+    if (isIntersecting && !loading && hasMore) {
       loadImages();
     }
   }, [isIntersecting]);
@@ -60,53 +79,56 @@ export default function ImageGallery() {
   };
 
   return (
-    <>
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {images.map((image) => (
-            <ImageCard
-              key={image.id}
-              image={image}
-              onClick={() => handleImageClick(image)}
-            />
-          ))}
+    <div className="space-y-8">
+      {error && (
+        <div className="text-red-600 text-center p-4 bg-red-50 rounded-lg">
+          {error}
         </div>
-        
-        <div
-          ref={loadMoreRef}
-          className="col-span-full flex justify-center p-4"
-        >
-          {loading && (
-            <div className="inline-flex items-center px-4 py-2 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-pink-600 hover:bg-pink-500 focus:outline-none focus:border-pink-700 focus:shadow-outline-pink active:bg-pink-700 transition ease-in-out duration-150 cursor-not-allowed">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Loading...
-            </div>
-          )}
-        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {images.map((image) => (
+          <ImageCard
+            key={image.id}
+            image={image}
+            onClick={() => handleImageClick(image)}
+          />
+        ))}
       </div>
 
-      <Modal
-        isOpen={!!selectedImage}
-        onClose={() => {
-          setSelectedImage(null);
-          setSelectedIndex(0);
-        }}
+      {/* Loading indicator and intersection observer target */}
+      <div
+        ref={loadMoreRef}
+        className="h-20 w-full flex justify-center items-center"
       >
-        {selectedImage && (
+        {loading && (
+          <div className="animate-pulse flex space-x-2">
+            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+          </div>
+        )}
+        {!loading && hasMore && images.length > 0 && (
+          <div className="text-gray-500">Scroll for more</div>
+        )}
+        {!hasMore && images.length > 0 && (
+          <div className="text-gray-500">No more images to load</div>
+        )}
+      </div>
+
+      {selectedImage && (
+        <Modal isOpen={!!selectedImage} onClose={() => setSelectedImage(null)}>
           <ImageDetail
             image={selectedImage}
             images={images}
             currentIndex={selectedIndex}
-            onNavigate={(index) => {
-              setSelectedIndex(index);
-              setSelectedImage(images[index]);
+            onNavigate={(newIndex) => {
+              setSelectedIndex(newIndex);
+              setSelectedImage(images[newIndex]);
             }}
           />
-        )}
-      </Modal>
-    </>
+        </Modal>
+      )}
+    </div>
   );
 } 
