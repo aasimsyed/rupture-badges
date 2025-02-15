@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -8,8 +8,9 @@ cloudinary.config({
   secure: true,
 });
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { cursor } = req.query;
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const cursor = searchParams.get('cursor');
   
   try {
     console.log('Fetching images from folder:', process.env.CLOUDINARY_FOLDER);
@@ -19,17 +20,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .with_field('context')
       .sort_by('created_at', 'desc')
       .max_results(12)
-      .next_cursor(cursor as string)
+      .next_cursor(cursor || undefined)
       .execute();
 
     console.log('Found images:', results.resources.length);
     
-    res.status(200).json({
+    return NextResponse.json({
       images: results.resources,
       nextCursor: results.next_cursor,
     });
   } catch (error) {
     console.error('Error in /api/images:', error);
-    res.status(500).json({ error: 'Failed to fetch images', details: error });
+    return NextResponse.json(
+      { error: 'Failed to fetch images', details: error },
+      { status: 500 }
+    );
   }
-} 
+}
