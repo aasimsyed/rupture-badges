@@ -103,8 +103,8 @@ export function getMetadataForImage(publicId: string): BadgeMetadata | undefined
   } catch (error) {
     console.error('Error processing metadata:', error);
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
     });
   }
   
