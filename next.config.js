@@ -2,8 +2,10 @@ const webpack = require('webpack');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
     domains: ['res.cloudinary.com'],
+    unoptimized: false,
   },
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
@@ -42,4 +44,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig
