@@ -27,19 +27,24 @@ export default function ImageDetail({ image, images, onNavigate, currentIndex }:
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
 
   const handlePrevious = useCallback(() => {
-    const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
-    onNavigate(newIndex);
-  }, [currentIndex, images.length, onNavigate]);
+    if (!isZoomed) {
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
+      onNavigate(newIndex);
+    }
+  }, [currentIndex, images.length, onNavigate, isZoomed]);
 
   const handleNext = useCallback(() => {
-    const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
-    onNavigate(newIndex);
-  }, [currentIndex, images.length, onNavigate]);
+    if (!isZoomed) {
+      const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
+      onNavigate(newIndex);
+    }
+  }, [currentIndex, images.length, onNavigate, isZoomed]);
 
   const { isSwiping } = useSwipeGesture({
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrevious,
-    threshold: 75,
+    threshold: 50,
+    enabled: !isZoomed,
   });
 
   const toggleFullscreen = useCallback(async () => {
@@ -68,40 +73,81 @@ export default function ImageDetail({ image, images, onNavigate, currentIndex }:
   }, []);
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto">
-      <div className="relative p-4" ref={containerRef}>
+    <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-0">
+      <div className="relative" ref={containerRef}>
+        <div className="absolute inset-y-0 left-0 sm:-left-12 flex items-center z-10">
+          {currentIndex > 0 && !isZoomed && (
+            <button
+              type="button"
+              title="Previous"
+              onClick={handlePrevious}
+              className="p-2 text-white bg-black/50 rounded-full hover:bg-black/75 ml-2 sm:ml-0"
+            >
+              <ArrowLeftCircleIcon className="h-6 w-6 sm:h-8 sm:w-8" />
+            </button>
+          )}
+        </div>
+
+        <div className="absolute inset-y-0 right-0 sm:-right-12 flex items-center z-10">
+          {currentIndex < images.length - 1 && !isZoomed && (
+            <button
+              type="button"
+              title="Next"
+              onClick={handleNext}
+              className="p-2 text-white bg-black/50 rounded-full hover:bg-black/75 mr-2 sm:mr-0"
+            >
+              <ArrowRightCircleIcon className="h-6 w-6 sm:h-8 sm:w-8" />
+            </button>
+          )}
+        </div>
+
         <div className="relative aspect-square overflow-hidden rounded-lg bg-black">
           <TransformWrapper
             ref={transformRef}
             initialScale={1}
             minScale={1}
             maxScale={3}
-            onTransformed={(_, state) => setIsZoomed(state.scale > 1)}
+            onTransformed={(_, state) => {
+              setIsZoomed(state.scale > 1);
+              if (state.scale === 1) {
+                transformRef.current?.resetTransform();
+              }
+            }}
+            doubleClick={{ disabled: true }}
+            panning={{ disabled: !isZoomed }}
+            centerOnInit={true}
+            wheel={{ step: 0.1 }}
+            pinch={{ disabled: false }}
           >
             {({ zoomIn, zoomOut, instance }) => (
               <>
-                <TransformComponent>
+                <TransformComponent
+                  wrapperClass={`${!isZoomed ? 'cursor-grab touch-pan-x' : 'cursor-move'}`}
+                  contentClass={isZoomed ? 'touch-none' : 'touch-pan-x'}
+                >
                   <Image
                     src={image.url}
                     alt={image.title}
                     width={image.width}
                     height={image.height}
-                    className="object-contain"
+                    className={`object-contain select-none ${isZoomed ? '' : 'touch-pan-x'}`}
                     priority
+                    draggable={false}
+                    unoptimized={true}
                   />
                 </TransformComponent>
 
                 <button
                   type="button"
                   onClick={() => {
-                    const currentScale = instance.transformState.scale;
-                    if (currentScale === 1) {
-                      zoomIn(2);
+                    if (isZoomed) {
+                      zoomOut(1, 200);
+                      transformRef.current?.resetTransform();
                     } else {
-                      zoomOut(1);
+                      zoomIn(2, 200);
                     }
                   }}
-                  className="absolute top-4 right-4 p-2 text-white bg-black/50 rounded-full hover:bg-black/75 transition-colors"
+                  className="absolute top-4 right-4 p-2 text-white bg-black/50 rounded-full hover:bg-black/75 transition-colors z-20"
                   title={isZoomed ? "Zoom Out" : "Zoom In"}
                 >
                   {isZoomed ? (
@@ -113,32 +159,6 @@ export default function ImageDetail({ image, images, onNavigate, currentIndex }:
               </>
             )}
           </TransformWrapper>
-        </div>
-
-        {/* Navigation buttons */}
-        <div className="absolute inset-y-0 -left-12 flex items-center">
-          {currentIndex > 0 && (
-            <button
-              type="button"
-              title="Previous"
-              onClick={handlePrevious}
-              className="p-2 text-white bg-black/50 rounded-full hover:bg-black/75"
-            >
-              <ArrowLeftCircleIcon className="h-8 w-8" />
-            </button>
-          )}
-        </div>
-        <div className="absolute inset-y-0 -right-12 flex items-center">
-          {currentIndex < images.length - 1 && (
-            <button
-              type="button"
-              title="Next"
-              onClick={handleNext}
-              className="p-2 text-white bg-black/50 rounded-full hover:bg-black/75"
-            >
-              <ArrowRightCircleIcon className="h-8 w-8" />
-            </button>
-          )}
         </div>
       </div>
 

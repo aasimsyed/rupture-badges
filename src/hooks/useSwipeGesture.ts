@@ -4,15 +4,18 @@ interface SwipeConfig {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   threshold?: number;
+  enabled?: boolean;
 }
 
 export default function useSwipeGesture(config: SwipeConfig) {
-  const { onSwipeLeft, onSwipeRight, threshold = 50 } = config;
+  const { onSwipeLeft, onSwipeRight, threshold = 50, enabled = true } = config;
   const touchStart = useRef<number | null>(null);
   const touchEnd = useRef<number | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const handleTouchStart = (e: TouchEvent) => {
       touchEnd.current = null;
       touchStart.current = e.targetTouches[0].clientX;
@@ -24,11 +27,12 @@ export default function useSwipeGesture(config: SwipeConfig) {
     };
 
     const handleTouchEnd = () => {
+      setIsSwiping(false);
       if (!touchStart.current || !touchEnd.current) return;
 
-      const distance = touchStart.current - touchEnd.current;
-      const isLeftSwipe = distance > threshold;
-      const isRightSwipe = distance < -threshold;
+      const distance = touchEnd.current - touchStart.current;
+      const isLeftSwipe = distance < -threshold;
+      const isRightSwipe = distance > threshold;
 
       if (isLeftSwipe && onSwipeLeft) {
         onSwipeLeft();
@@ -38,7 +42,6 @@ export default function useSwipeGesture(config: SwipeConfig) {
 
       touchStart.current = null;
       touchEnd.current = null;
-      setIsSwiping(false);
     };
 
     document.addEventListener('touchstart', handleTouchStart);
@@ -50,7 +53,7 @@ export default function useSwipeGesture(config: SwipeConfig) {
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [onSwipeLeft, onSwipeRight, threshold]);
+  }, [onSwipeLeft, onSwipeRight, threshold, enabled]);
 
   return { isSwiping };
 } 
