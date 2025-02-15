@@ -7,9 +7,6 @@ const nextConfig = {
     unoptimized: false,
   },
   reactStrictMode: true,
-  experimental: {
-    serverActions: true,
-  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Provide polyfills and fallbacks for client-side

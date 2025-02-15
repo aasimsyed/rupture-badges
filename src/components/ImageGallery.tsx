@@ -67,64 +67,52 @@ export default function ImageGallery() {
 
   // Load more when scrolling
   useEffect(() => {
-    if (isIntersecting && !loading && hasMore) {
+    if (isIntersecting) {
       loadImages();
     }
   }, [isIntersecting]);
 
-  const handleImageClick = (image: ImageType) => {
-    const index = images.findIndex(img => img.id === image.id);
-    setSelectedIndex(index);
-    setSelectedImage(image);
-  };
-
   return (
     <div className="space-y-8">
       {error && (
-        <div className="text-red-600 text-center p-4 bg-red-50 rounded-lg">
-          {error}
-        </div>
+        <div className="text-center text-red-500">{error}</div>
       )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {images.map((image) => (
           <ImageCard
             key={image.id}
             image={image}
-            onClick={() => handleImageClick(image)}
+            onClick={() => {
+              setSelectedImage(image);
+              setSelectedIndex(images.findIndex(img => img.id === image.id));
+            }}
           />
         ))}
       </div>
 
-      {/* Loading indicator and intersection observer target */}
-      <div
-        ref={loadMoreRef}
-        className="h-20 w-full flex justify-center items-center"
-      >
+      {/* Load more trigger */}
+      <div ref={loadMoreRef} className="h-10">
         {loading && (
-          <div className="animate-pulse flex space-x-2">
-            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-punk-pink border-t-transparent" />
           </div>
-        )}
-        {!loading && hasMore && images.length > 0 && (
-          <div className="text-gray-500">Scroll for more</div>
-        )}
-        {!hasMore && images.length > 0 && (
-          <div className="text-gray-500">No more images to load</div>
         )}
       </div>
 
+      {/* Modal */}
       {selectedImage && (
-        <Modal isOpen={!!selectedImage} onClose={() => setSelectedImage(null)}>
+        <Modal
+          isOpen={!!selectedImage}
+          onClose={() => setSelectedImage(null)}
+        >
           <ImageDetail
             image={selectedImage}
             images={images}
             currentIndex={selectedIndex}
-            onNavigate={(newIndex) => {
-              setSelectedIndex(newIndex);
-              setSelectedImage(images[newIndex]);
+            onNavigate={(index) => {
+              setSelectedIndex(index);
+              setSelectedImage(images[index]);
             }}
           />
         </Modal>
