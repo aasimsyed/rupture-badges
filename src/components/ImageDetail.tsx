@@ -101,7 +101,7 @@ export default function ImageDetail({ image, images, onNavigate, currentIndex }:
           )}
         </div>
 
-        <div className="relative aspect-square overflow-hidden rounded-lg bg-black">
+        <div className="relative h-[80vh] overflow-hidden rounded-lg bg-black flex items-center justify-center">
           <TransformWrapper
             ref={transformRef}
             initialScale={1}
@@ -119,22 +119,26 @@ export default function ImageDetail({ image, images, onNavigate, currentIndex }:
             wheel={{ step: 0.1 }}
             pinch={{ disabled: false }}
           >
-            {({ zoomIn, zoomOut, instance }) => (
+            {({ zoomIn, zoomOut }) => (
               <>
                 <TransformComponent
-                  wrapperClass={`${!isZoomed ? 'cursor-grab touch-pan-x' : 'cursor-move'}`}
-                  contentClass={isZoomed ? 'touch-none' : 'touch-pan-x'}
+                  wrapperClass={`${!isZoomed ? 'cursor-grab touch-pan-x' : 'cursor-move'} w-full h-full flex items-center justify-center`}
+                  contentClass={`${isZoomed ? 'touch-none' : 'touch-pan-x'} flex items-center justify-center`}
                 >
-                  <Image
-                    src={image.url}
-                    alt={image.title}
-                    width={image.width}
-                    height={image.height}
-                    className={`object-contain select-none ${isZoomed ? '' : 'touch-pan-x'}`}
-                    priority
-                    draggable={false}
-                    unoptimized={true}
-                  />
+                  <div className="flex items-center justify-center w-full h-full">
+                    <Image
+                      src={image.url}
+                      alt={image.title}
+                      width={image.width}
+                      height={image.height}
+                      className={`object-contain w-auto h-auto max-h-[75vh] max-w-[95%] select-none ${
+                        isZoomed ? '' : 'touch-pan-x'
+                      }`}
+                      priority
+                      draggable={false}
+                      unoptimized={true}
+                    />
+                  </div>
                 </TransformComponent>
 
                 <button
