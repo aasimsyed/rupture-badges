@@ -33,10 +33,9 @@ export default function ImageCard({ image, onClick }: ImageCardProps) {
       </div>
       
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <h3 className="text-white font-bold text-lg font-punk">{image.title}</h3>
-        {image.description && (
-          <p className="text-gray-200 text-sm">{image.description}</p>
-        )}
+        <h3 className="text-white font-bold text-lg font-punk">{image.metadata?.band && (
+          <span className="text-gray-200 text-sm">{image.metadata.band}</span>
+        )}</h3>
       </div>
     </div>
   );

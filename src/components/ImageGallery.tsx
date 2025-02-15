@@ -9,29 +9,23 @@ import { getImages } from '@/utils/cloudinary';
 export default function ImageGallery() {
   const [images, setImages] = useState<ImageType[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [nextCursor, setNextCursor] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const isIntersecting = useIntersectionObserver(loadMoreRef);
 
-  const loadImages = async () => {
+  const loadImages = async (page: number) => {
     if (loading || !hasMore) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      const result = await getImages(nextCursor);
-      
-      if (result.images.length === 0 && images.length === 0) {
-        setError('No images found');
-        setHasMore(false);
-        return;
-      }
+      const result = await getImages(page);
       
       setImages(prev => {
         const newImages = result.images.map(img => ({
@@ -40,21 +34,18 @@ export default function ImageGallery() {
           title: img.public_id.split('/').pop() || '',
           width: img.width,
           height: img.height,
+          metadata: img.metadata
         }));
         
-        // Filter out duplicates based on id
-        const existingIds = new Set(prev.map(img => img.id));
-        const uniqueNewImages = newImages.filter(img => !existingIds.has(img.id));
-        
-        return [...prev, ...uniqueNewImages];
+        // Combine with previous images
+        return page === 1 ? newImages : [...prev, ...newImages];
       });
-      
-      setNextCursor(result.nextCursor);
-      setHasMore(!!result.nextCursor);
+
+      setHasMore(result.nextPage !== null);
+      setCurrentPage(page);
     } catch (error) {
-      console.error('Failed to load images:', error);
-      setError('Failed to load images. Please try again.');
-      setHasMore(false);
+      setError('Failed to load images');
+      console.error('Error loading images:', error);
     } finally {
       setLoading(false);
     }
@@ -62,18 +53,18 @@ export default function ImageGallery() {
 
   // Initial load
   useEffect(() => {
-    loadImages();
+    loadImages(1);
   }, []);
 
   // Load more when scrolling
   useEffect(() => {
-    if (isIntersecting) {
-      loadImages();
+    if (isIntersecting && hasMore) {
+      loadImages(currentPage + 1);
     }
   }, [isIntersecting]);
 
   return (
-    <div className="space-y-8">
+    <div className="container mx-auto px-4 py-8">
       {error && (
         <div className="text-center text-red-500">{error}</div>
       )}
@@ -91,16 +82,13 @@ export default function ImageGallery() {
         ))}
       </div>
 
-      {/* Load more trigger */}
-      <div ref={loadMoreRef} className="h-10">
+      {/* Loading indicator and intersection observer target */}
+      <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
         {loading && (
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-punk-pink border-t-transparent" />
-          </div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-punk-pink border-t-transparent" />
         )}
       </div>
 
-      {/* Modal */}
       {selectedImage && (
         <Modal
           isOpen={!!selectedImage}

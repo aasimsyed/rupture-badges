@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryImage } from '@/types';  // Import from types instead
 
 // Only configure cloudinary on the server side
 if (typeof window === 'undefined') {
@@ -10,25 +11,17 @@ if (typeof window === 'undefined') {
   });
 }
 
-export interface CloudinaryImage {
-  public_id: string;
-  secure_url: string;
-  width: number;
-  height: number;
-  format: string;
-}
-
-export async function getImages(nextCursor?: string): Promise<{
+export async function getImages(page?: number): Promise<{
   images: CloudinaryImage[];
-  nextCursor?: string;
+  nextPage: number | null;
+  total: number;
 }> {
   try {
     const params = new URLSearchParams();
-    if (nextCursor) {
-      params.append('cursor', nextCursor);
+    if (page) {
+      params.append('page', page.toString());
     }
     
-    // Add timestamp to prevent caching
     const timestamp = Date.now();
     params.append('_t', timestamp.toString());
     
@@ -48,7 +41,8 @@ export async function getImages(nextCursor?: string): Promise<{
     
     return {
       images: data.images,
-      nextCursor: data.nextCursor,
+      nextPage: data.nextPage,
+      total: data.total
     };
   } catch (error) {
     console.error('Error fetching images:', error);
